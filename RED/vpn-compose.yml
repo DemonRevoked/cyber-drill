@@ -1,0 +1,28 @@
+version: '3.8'
+
+# Red Land VPN Server
+# This file contains Red Team's VPN gateway for Red Team access
+
+services:
+  # Red Land VPN Gateway
+  red_land_vpn_gateway:
+    image: openvpn/openvpn-as
+    container_name: red_land_vpn_gateway
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "1194:1194/udp"
+    volumes:
+      - red_land_vpn_data:/openvpn
+    networks:
+      - blue_land_production
+    restart: unless-stopped
+    environment:
+      - OVPN_SERVER=10.10.10.0/24
+    privileged: true
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    labels:
+      - "cyberrange.role=red_land"
+      - "cyberrange.access=production_only"
+

@@ -1,0 +1,239 @@
+version: '3.8'
+
+# Master Deployment Configuration for Cyber Drill Training Environment
+# This file orchestrates all components: BLUE team, RED team, and ENV infrastructure
+
+services:
+  # ============================================
+  # BLUE TEAM SERVICES
+  # ============================================
+  
+  # Blue Land Secure Gateway (Blue Team VPN)
+  blue_land_secure_gateway:
+    image: openvpn/openvpn-as
+    container_name: blue_land_secure_gateway
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "1195:1194/udp"
+    volumes:
+      - blue_land_vpn_data:/openvpn
+    networks:
+      - blue_land_management
+      - blue_land_production
+    restart: unless-stopped
+    environment:
+      - OVPN_SERVER=10.10.20.0/24
+    privileged: true
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    labels:
+      - "cyberrange.role=blue_land"
+      - "cyberrange.access=management_and_production"
+
+  # ============================================
+  # RED TEAM SERVICES
+  # ============================================
+  
+  # Red Land VPN Gateway
+  red_land_vpn_gateway:
+    image: openvpn/openvpn-as
+    container_name: red_land_vpn_gateway
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "1194:1194/udp"
+    volumes:
+      - red_land_vpn_data:/openvpn
+    networks:
+      - blue_land_production
+    restart: unless-stopped
+    environment:
+      - OVPN_SERVER=10.10.10.0/24
+    privileged: true
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    labels:
+      - "cyberrange.role=red_land"
+      - "cyberrange.access=production_only"
+
+  # ============================================
+  # ENVIRONMENT INFRASTRUCTURE (ENV)
+  # ============================================
+  
+  # Active Directory Domain Controller
+  dc1:
+    container_name: ${DC_NAME:-dc1}
+    hostname: ${DC_NAME:-dc1}
+    build:
+      context: ./ENV/AD/DCserver/dockerfile
+      target: dc
+    restart: unless-stopped
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./ENV/AD/DCserver/config-dc1:/etc/samba/config
+      - ./ENV/AD/DCserver/data-dc1:/var/lib/samba
+    environment:
+      - DOMAIN_FQDN=${DOMAIN_FQDN}
+      - DOMAIN_DN=${DOMAIN_DN}
+      - DNSFORWARDER=${MAIN_DNS_IP}
+      - DC_IP=${DC_IP}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+    dns_search:
+      - ${DOMAIN_FQDN}
+    dns:
+      - ${DC_IP}
+      - ${MAIN_DNS_IP}
+    extra_hosts:
+      - "${DC_NAME}.${DOMAIN_FQDN}:${DC_IP}"
+    privileged: true
+    networks:
+      sambanet:
+        ipv4_address: ${DC_IP}
+      blue_land_production:
+    cap_add:
+      - NET_ADMIN
+      - SYS_NICE
+      - SYS_RESOURCE
+      - SYS_TIME
+    labels:
+      - "cyberrange.role=infrastructure"
+      - "cyberrange.component=active_directory"
+
+  # File Server
+  fs1:
+    container_name: ${FS_NAME:-fs1}
+    hostname: ${FS_NAME:-fs1}
+    build:
+      context: ./ENV/AD/DCserver/dockerfile
+      target: fs
+    restart: unless-stopped
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./ENV/AD/DCserver/config-fs1/kerberos/krb5.conf:/etc/krb5.conf
+      - ./ENV/AD/DCserver/config-fs1/samba:/etc/samba/config
+      - ./ENV/AD/DCserver/data-fs1:/var/lib/samba
+      - ./ENV/AD/DCserver/shares-fs1:/srv/samba
+    environment:
+      - DOMAIN_FQDN=${DOMAIN_FQDN}
+      - DOMAIN_DN=${DOMAIN_DN}
+      - FS_NAME=${FS_NAME}
+      - FS_IP=${FS_IP}
+      - DC_IP=${DC_IP}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+    dns_search:
+      - ${DOMAIN_FQDN}
+    dns:
+      - ${DC_IP}
+      - ${MAIN_DNS_IP}
+    extra_hosts:
+      - "${FS_NAME}.${DOMAIN_FQDN}:${FS_IP}"
+      - "${DC_NAME}.${DOMAIN_FQDN}:${DC_IP}"
+    privileged: true
+    networks:
+      sambanet:
+        ipv4_address: ${FS_IP}
+      blue_land_production:
+    depends_on:
+      - dc1
+    cap_add:
+      - NET_ADMIN
+      - SYS_NICE
+      - SYS_RESOURCE
+      - SYS_TIME
+    labels:
+      - "cyberrange.role=infrastructure"
+      - "cyberrange.component=file_server"
+
+  # phpLDAPadmin - LDAP Management Interface
+  phpldapadmin:
+    image: osixia/phpldapadmin:0.9.0
+    container_name: phpldapadmin
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:6443:443"
+    environment:
+      - PHPLDAPADMIN_LDAP_HOSTS=ldaps://${DC_NAME}.${DOMAIN_FQDN}:636
+      - PHPLDAPADMIN_LDAP_CLIENT_TLS=true
+      - PHPLDAPADMIN_LDAP_CLIENT_TLS_REQCERT=never
+      - PHPLDAPADMIN_TRUST_PROXY_SSL=true
+      - PHPLDAPADMIN_HTTPS=true
+    dns:
+      - ${DC_IP}
+      - ${MAIN_DNS_IP}
+    extra_hosts:
+      - "${DC_NAME}.${DOMAIN_FQDN}:${DC_IP}"
+    networks:
+      sambanet:
+        ipv4_address: ${LDAPADMIN_IP}
+      blue_land_production:
+    depends_on:
+      - dc1
+    labels:
+      - "cyberrange.role=infrastructure"
+      - "cyberrange.component=ldap_admin"
+
+  # Vulnerable Web Server (Training Target)
+  vulnerable_webserver:
+    container_name: vulnerable_webserver
+    build:
+      context: ./ENV/AD/WebServer
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - webserver_data:/app/database.db
+    networks:
+      - blue_land_production
+    restart: unless-stopped
+    labels:
+      - "cyberrange.role=training_target"
+      - "cyberrange.vulnerabilities=sql_injection,xss,command_injection,idor"
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+    depends_on:
+      - dc1
+
+# ============================================
+# VOLUMES
+# ============================================
+
+volumes:
+  blue_land_vpn_data:
+    driver: local
+  red_land_vpn_data:
+    driver: local
+  webserver_data:
+    driver: local
+
+# ============================================
+# NETWORKS
+# ============================================
+
+networks:
+  # Blue Team Management Network (isolated)
+  blue_land_management:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.30.0/24
+
+  # Blue Team Production Network (shared with Red Team)
+  blue_land_production:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.40.0/24
+
+  # Samba/AD Network (macvlan for static IPs)
+  sambanet:
+    driver: macvlan
+    driver_opts:
+      parent: ${HOST_INTERFACE:-eth0}
+    ipam:
+      config:
+        - subnet: "${SUBNET:-192.168.1.0/24}"
+          gateway: "${GATEWAY:-192.168.1.1}"
+          ip_range: "${CONTAINER_IP_RANGE:-192.168.1.100/29}"
+

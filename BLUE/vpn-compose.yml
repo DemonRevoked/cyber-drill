@@ -1,0 +1,29 @@
+version: '3.8'
+
+# Blue Land VPN Server
+# This file contains Blue Team's VPN access for defense operations
+
+services:
+  # Blue Land Secure Gateway (Blue Team VPN)
+  blue_land_secure_gateway:
+    image: openvpn/openvpn-as
+    container_name: blue_land_secure_gateway
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - "1195:1194/udp"
+    volumes:
+      - blue_land_vpn_data:/openvpn
+    networks:
+      - blue_land_management
+      - blue_land_production
+    restart: unless-stopped
+    environment:
+      - OVPN_SERVER=10.10.20.0/24
+    privileged: true
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    labels:
+      - "cyberrange.role=blue_land"
+      - "cyberrange.access=management_and_production"
+
