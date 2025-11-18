@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cyber Range App</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .vulnerable { background: #ffebee; padding: 20px; border-radius: 5px; margin: 20px 0; }
+        .warning { color: #d32f2f; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to Cyber Range Application</h1>
+        
+        <div class="vulnerable">
+            <h2 class="warning">⚠️ VULNERABLE APPLICATION</h2>
+            <p>This application contains intentional security vulnerabilities for training purposes.</p>
+        </div>
+        
+        <h2>Available Features:</h2>
+        <ul>
+            <li><a href="/login">Login</a> - SQL Injection vulnerability</li>
+            <li><a href="/flags">View Flags</a> - Insecure direct object reference</li>
+            <li><a href="/admin">Admin Panel</a> - No authentication required</li>
+            <li><a href="/search?q=test">Search</a> - Command injection vulnerability</li>
+        </ul>
+        
+        <h2>API Endpoints:</h2>
+        <ul>
+            <li><code>GET /api/user/1</code> - User information (IDOR vulnerability)</li>
+        </ul>
+        
+        <h2>Default Credentials:</h2>
+        <p><strong>Username:</strong> admin<br>
+        <strong>Password:</strong> admin123</p>
+    </div>
+</body>
+</html>

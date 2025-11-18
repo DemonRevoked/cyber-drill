@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flags - Cyber Range App</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .flag { background: #f3e5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .flag-code { font-family: monospace; background: #e1f5fe; padding: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Capture the Flag</h1>
+        
+        {% for flag in flags %}
+        <div class="flag">
+            <h3>Flag {{ flag[0] }}</h3>
+            <p><strong>Code:</strong> <span class="flag-code">{{ flag[1] }}</span></p>
+            <p><strong>Description:</strong> {{ flag[2] }}</p>
+            <p><strong>Points:</strong> {{ flag[3] }}</p>
+        </div>
+        {% endfor %}
+        
+        <p><a href="/">Back to Home</a></p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,32 @@
+version: '3.8'
+
+# Vulnerable Web Server for Cyber Drill Training
+# This web application contains intentional vulnerabilities for training purposes
+
+services:
+  webserver:
+    container_name: vulnerable_webserver
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - webserver_data:/app/database.db
+    networks:
+      - blue_land_production
+    restart: unless-stopped
+    labels:
+      - "cyberrange.role=training_target"
+      - "cyberrange.vulnerabilities=sql_injection,xss,command_injection,idor"
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+
+volumes:
+  webserver_data:
+
+networks:
+  blue_land_production:
+    driver: bridge
+

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel - Cyber Range App</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .section { background: #f5f5f5; padding: 20px; margin: 20px 0; border-radius: 5px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #e0e0e0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Admin Panel</h1>
+        <p class="warning">⚠️ No authentication required - This is a vulnerability!</p>
+        
+        <div class="section">
+            <h2>Users</h2>
+            <table>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                </tr>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user[0] }}</td>
+                    <td>{{ user[1] }}</td>
+                    <td>{{ user[3] }}</td>
+                    <td>{{ user[4] }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        
+        <div class="section">
+            <h2>Flags</h2>
+            <table>
+                <tr>
+                    <th>ID</th>
+                    <th>Flag</th>
+                    <th>Description</th>
+                    <th>Points</th>
+                </tr>
+                {% for flag in flags %}
+                <tr>
+                    <td>{{ flag[0] }}</td>
+                    <td>{{ flag[1] }}</td>
+                    <td>{{ flag[2] }}</td>
+                    <td>{{ flag[3] }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        
+        <p><a href="/">Back to Home</a></p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,83 @@
+#!/bin/bash
+
+set -e
+
+# Call the vars script
+SCRIPT_PATH=$(dirname "$0")
+source "$SCRIPT_PATH"/vars.sh
+
+# Read password mode: support --password-stdin or env ADMIN_PASSWORD
+READ_FROM_STDIN=false
+for arg in "$@"; do
+    case "$arg" in
+        --password-stdin)
+            READ_FROM_STDIN=true
+            ;;
+    esac
+done
+
+if $READ_FROM_STDIN; then
+    # Read exactly one line from stdin as the admin password
+    IFS= read -r ADMIN_PASSWORD_INPUT || true
+    ADMIN_PASSWORD="${ADMIN_PASSWORD_INPUT:-$ADMIN_PASSWORD}"
+fi
+
+if [ -z "$ADMIN_PASSWORD" ]; then
+    echo "ERROR: ADMIN_PASSWORD is not set and no password provided on stdin."
+    exit 1
+fi
+
+if [ -f "$CONFIG_FILE" ]; then
+
+   echo "Samba config file found at: $CONFIG_FILE"
+   echo "Samba seems to be configured already. Exiting." 
+
+   exit 0
+
+fi
+
+# krb5.conf: write the Kerberos configuration file
+echo "[libdefaults]" > "$KERBEROS_CONFIG_FILE"
+echo "default_realm = $DOMAIN_FQDN_UCASE" >> "$KERBEROS_CONFIG_FILE"
+echo "dns_lookup_realm = false" >> "$KERBEROS_CONFIG_FILE"
+echo "dns_lookup_kdc = true" >> "$KERBEROS_CONFIG_FILE"
+
+# smb.conf: write the Samba configuration file
+echo "[global]" > "$DEFAULT_CONFIG_FILE"
+echo "  workgroup = ${DOMAIN_NETBIOS}" >> "$DEFAULT_CONFIG_FILE"
+echo "  security = ADS" >> "$DEFAULT_CONFIG_FILE"
+echo "  realm = ${DOMAIN_FQDN_UCASE}" >> "$DEFAULT_CONFIG_FILE"
+echo "  idmap config * : backend = tdb" >> "$DEFAULT_CONFIG_FILE"
+echo "  idmap config * : range = 3000-7999" >> "$DEFAULT_CONFIG_FILE"
+echo "  idmap config ${DOMAIN_NETBIOS} : backend  = rid" >> "$DEFAULT_CONFIG_FILE"
+echo "  idmap config ${DOMAIN_NETBIOS} : range  = 10000-999999" >> "$DEFAULT_CONFIG_FILE"
+echo "  winbind use default domain = yes" >> "$DEFAULT_CONFIG_FILE"
+#echo "  vfs objects = acl_xattr" >> "$DEFAULT_CONFIG_FILE"
+#echo "  map acl inherit = yes" >> "$DEFAULT_CONFIG_FILE"
+#echo "  acl_xattr:ignore system acls = yes" >> "$DEFAULT_CONFIG_FILE"      # Without this, Windows ACL Editor shows Unix permissions in addition to Windows ACLs.
+echo "  username map = ${USERMAP_FILE}" >> "$DEFAULT_CONFIG_FILE"
+echo "  dedicated keytab file = /etc/krb5.keytab" >> "$DEFAULT_CONFIG_FILE"
+echo "  kerberos method = secrets and keytab" >> "$DEFAULT_CONFIG_FILE"
+echo "  winbind refresh tickets = yes" >> "$DEFAULT_CONFIG_FILE"
+
+# user.map: map the domain's Administrator account to the local root user
+echo "!root = ${DOMAIN_NETBIOS}\Administrator" > "$USERMAP_FILE"
+
+# If /var/lib/samba is a Docker bind mount the "private" directory needs to be created explicitly or the domain join fails
+if [ ! -d /var/lib/samba/private ]; then
+   mkdir /var/lib/samba/private
+fi
+
+# Join the domain
+echo "Joining the domain ${DOMAIN_FQDN_LCASE}..."
+samba-tool domain join "${DOMAIN_FQDN_LCASE}" MEMBER -U "Administrator%${ADMIN_PASSWORD}"
+
+# Ensure machine keytab exists and is populated
+if [ ! -f /etc/krb5.keytab ]; then
+   echo "Creating Kerberos keytab..."
+   net ads keytab create -U "Administrator%${ADMIN_PASSWORD}"
+   chmod 600 /etc/krb5.keytab
+fi
+
+# smb.conf: move the config created/modified/used by the join tool to our target directory
+mv "$DEFAULT_CONFIG_FILE" "$CONFIG_FILE"

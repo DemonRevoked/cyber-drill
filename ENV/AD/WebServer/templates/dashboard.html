@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard - Cyber Range App</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .user-info { background: #e3f2fd; padding: 20px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>User Dashboard</h1>
+        
+        <div class="user-info">
+            <h2>User Information</h2>
+            <p><strong>ID:</strong> {{ user[0] }}</p>
+            <p><strong>Username:</strong> {{ user[1] }}</p>
+            <p><strong>Email:</strong> {{ user[3] }}</p>
+            <p><strong>Role:</strong> {{ user[4] }}</p>
+        </div>
+        
+        <h2>Quick Actions:</h2>
+        <ul>
+            <li><a href="/flags">View Flags</a></li>
+            <li><a href="/admin">Admin Panel</a></li>
+            <li><a href="/search?q=flag">Search Flags</a></li>
+        </ul>
+        
+        <p><a href="/">Back to Home</a></p>
+    </div>
+</body>
+</html>

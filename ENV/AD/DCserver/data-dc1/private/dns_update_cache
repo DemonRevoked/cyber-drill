@@ -1,0 +1,29 @@
+A dc1.example.local 192.168.1.100
+CNAME b2efda14-a205-41a4-b87b-6a1e8efc0873._msdcs.example.local dc1.example.local
+NS example.local dc1.example.local
+NS _msdcs.example.local dc1.example.local
+A example.local 192.168.1.100
+SRV _ldap._tcp.example.local dc1.example.local 389
+SRV _ldap._tcp.dc._msdcs.example.local dc1.example.local 389
+SRV _ldap._tcp.2475c711-1a3d-42ce-be0c-85ffe26919f0.domains._msdcs.example.local dc1.example.local 389
+SRV _kerberos._tcp.example.local dc1.example.local 88
+SRV _kerberos._udp.example.local dc1.example.local 88
+SRV _kerberos._tcp.dc._msdcs.example.local dc1.example.local 88
+SRV _kpasswd._tcp.example.local dc1.example.local 464
+SRV _kpasswd._udp.example.local dc1.example.local 464
+SRV _ldap._tcp.Default-First-Site-Name._sites.example.local dc1.example.local 389
+SRV _ldap._tcp.Default-First-Site-Name._sites.dc._msdcs.example.local dc1.example.local 389
+SRV _kerberos._tcp.Default-First-Site-Name._sites.example.local dc1.example.local 88
+SRV _kerberos._tcp.Default-First-Site-Name._sites.dc._msdcs.example.local dc1.example.local 88
+SRV _ldap._tcp.pdc._msdcs.example.local dc1.example.local 389
+A gc._msdcs.example.local 192.168.1.100
+SRV _gc._tcp.example.local dc1.example.local 3268
+SRV _ldap._tcp.gc._msdcs.example.local dc1.example.local 3268
+SRV _gc._tcp.Default-First-Site-Name._sites.example.local dc1.example.local 3268
+SRV _ldap._tcp.Default-First-Site-Name._sites.gc._msdcs.example.local dc1.example.local 3268
+A DomainDnsZones.example.local 192.168.1.100
+SRV _ldap._tcp.DomainDnsZones.example.local dc1.example.local 389
+SRV _ldap._tcp.Default-First-Site-Name._sites.DomainDnsZones.example.local dc1.example.local 389
+A ForestDnsZones.example.local 192.168.1.100
+SRV _ldap._tcp.ForestDnsZones.example.local dc1.example.local 389
+SRV _ldap._tcp.Default-First-Site-Name._sites.ForestDnsZones.example.local dc1.example.local 389
